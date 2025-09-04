@@ -1,0 +1,40 @@
+
+unsigned long time_m1;
+//Variable für Zustandswechsel
+int taster_state_before = 0;
+// Kugeltaster
+const int taster = 1;
+int taster_state = 0;
+//Millisekunden Motorlaufzeit je Tasterdruck
+const int time_per_taster=1000;
+//Pruefvariable
+int zaehler = 0;
+
+void setup() {
+  Serial.begin(9600);
+
+  //Taster Pin
+  pinMode(taster, INPUT_PULLUP);
+}
+
+void loop() {
+//Mit Zeitsteuerung
+//Wenn Taster gedrueckt wird, wird die Motorlaufzeit erhoeht
+taster_state=digitalRead(taster);
+Serial.print(taster_state);
+if(taster_state==1 && taster_state_before==0){
+  if(time_m1 <= millis()){
+    time_m1=millis()+time_per_taster;
+  }
+  else{
+    time_m1=time_m1+time_per_taster;
+  }
+  taster_state=1; //damit nur einmal pro tasterdruck Zeit erhoeht wird
+ 
+}
+//Taster wieder frei, reset taster_state
+if(digitalRead(taster) == 0){
+  taster_state_before=0;
+}
+}
+
