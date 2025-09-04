@@ -19,17 +19,30 @@ int motorSensors[4][3] = {
   {11, 12, 13}  // Motor 4 → GPB3–GPB5
 };
 
+//Zeitsteuerungsvariable für Motorteuerung
+unsigned long time_m1
+
 void setup() {
   Serial.begin(9600);
 
   // MCP starten (Adresse 0x20)
   mcp.begin();
 
-  // 12 Sensoren als Input mit Pullup
+ /* Original
+ // 12 Sensoren als Input mit Pullup  ***pinMode(<1-12>, INPUT_PULLUP)*** was ist mcp?
   for (int i = 0; i < 12; i++) {
     mcp.pinMode(i, INPUT);
     mcp.pullUp(i, HIGH);
-  }
+  } */
+
+  // Kugeltaster
+  const int taster = 1;
+  //Millisekunden Motorlaufzeit je Tasterdruck
+  const int time_per_taster=1000;
+  //Taster Pin
+  pinMode(taster, INPUT_PULLUP);
+  //Variable für Zustandswechsel
+  int taster_state = 0;
 
   // Max Speed für Motoren
   motor1.setMaxSpeed(1000);
@@ -39,7 +52,8 @@ void setup() {
 }
 
 void loop() {
-  // Alle Motoren durchgehen
+/*  Original
+// Alle Motoren durchgehen
   for (int m = 0; m < 4; m++) {
     for (int s = 0; s < 3; s++) {
       int sensorPin = motorSensors[m][s];
@@ -64,4 +78,25 @@ void loop() {
   motor2.run();
   motor3.run();
   motor4.run();
+  */
+
+  //Mit Zeitsteuerung
+//Wenn Taster gedrueckt wird, wird die Motorlaufzeit erhoeht
+if(digitalRead(taster) == 1 && taster_state=0){
+  if(time_m1 <= millis()){
+    time_m1=millis()+time_per_taster;
+  }
+  else{
+    time_m1=time_m1+time_per_taster;
+  }
+  taster_state=1; //damit nur einmal pro tasterdruck Zeit erhoeht wird
 }
+//Taster wieder frei, reset taster_state
+if(digitalRead(taster) == 0){
+  taster_state=0;
+}
+//Motor vorwärts laufen lassen
+if(time_m1 >= millis()){
+  motor1.run()
+}
+
