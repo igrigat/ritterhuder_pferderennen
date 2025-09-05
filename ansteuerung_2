@@ -14,15 +14,16 @@ void setup() {
   Serial.begin(9600);
 
   //Taster Pin
-  pinMode(taster, INPUT); //bei INPUT muss der pin auf GND
+  pinMode(taster, INPUT_PULLUP); //bei INPUT muss der pin auf GND
 }
 
 void loop() {
 //Mit Zeitsteuerung
 //Wenn Taster gedrueckt wird, wird die Motorlaufzeit erhoeht
 taster_state=digitalRead(taster);
-if((taster_state==1) && (taster_state_before==0)){
-zaehler=zaehler+1;
+if(taster_state==1){
+  if(taster_state_before==0){
+  zaehler=zaehler+1;
 
   if(time_m1 <= millis()){
     time_m1=millis()+time_per_taster;
@@ -35,12 +36,13 @@ zaehler=zaehler+1;
   Serial.print(zaehler);
   Serial.print(" timer: ");
   Serial.print(time_m1);
+  }
 }
 
 //Serial.print(" taster_state: ");
-//  Serial.print(taster_state);
+//Serial.print(taster_state);
 //Taster wieder frei, reset taster_state
-if(taster_state == 0){
+if(taster_state==0){
   taster_state_before=0;
 }
 }
