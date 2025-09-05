@@ -44,7 +44,7 @@ if(taster_state==1){
 //Taster wieder frei, reset taster_state
 if(taster_state==0){
   taster_state_before=0;
-  delay(150);
+  delay(150);      //enprellen des tasters
 }
 }
 
