@@ -1,9 +1,10 @@
-
+#include <AccelStepper.h>
+AccelStepper stepper(8, 8, 9, 10, 11);
 unsigned long time_m1=0;
 //Variable für Zustandswechsel
 int taster_state_before = 0;
 // Kugeltaster
-const int taster = 2;
+const int taster = 5;
 int taster_state = 0;
 //Millisekunden Motorlaufzeit je Tasterdruck
 unsigned long time_per_taster=1000;
@@ -12,7 +13,8 @@ int zaehler = 0;
 
 void setup() {
   Serial.begin(9600);
-
+  stepper.setMaxSpeed(900);
+  stepper.setAcceleration(1000);
   //Taster Pin
   pinMode(taster, INPUT_PULLUP); //bei INPUT muss der pin auf GND
 }
@@ -20,7 +22,13 @@ void setup() {
 void loop() {
 //Mit Zeitsteuerung
 //Wenn Taster gedrueckt wird, wird die Motorlaufzeit erhoeht
-taster_state=digitalRead(taster);
+  if(digitalRead(taster)==1){
+    taster_state=0;
+    }
+ if(digitalRead(taster)==0){
+    taster_state=1;
+    }
+
 if(taster_state==1){
   if(taster_state_before==0){
   zaehler=zaehler+1;
@@ -31,6 +39,7 @@ if(taster_state==1){
   if(time_m1>millis()){
     time_m1=time_m1+time_per_taster;
   }
+
   taster_state_before=1; //damit nur einmal pro tasterdruck Zeit erhoeht wird
   Serial.print(" Zaehler: ");
   Serial.print(zaehler);
@@ -38,13 +47,14 @@ if(taster_state==1){
   Serial.print(time_m1);
   }
 }
-
-//Serial.print(" taster_state: ");
-//Serial.print(taster_state);
-//Taster wieder frei, reset taster_state
+if(taster_state_before==1){
 if(taster_state==0){
   taster_state_before=0;
-  delay(150);      //enprellen des tasters
+  delay(20);      //enprellen des tasters
 }
 }
-
+if(time_m1 > millis()){
+ stepper.setSpeed(700);
+ stepper.runSpeed(); 
+}
+}
