@@ -1,0 +1,52 @@
+#include <AccelStepper.h>
+AccelStepper stepper(8, 8, 9, 10, 11);
+unsigned long time_m1=0;
+//Variable für Zustandswechsel
+int taster_state_before = 0;
+// Kugeltaster
+const int taster = 5;
+int taster_state = 0;
+//Millisekunden Motorlaufzeit je Tasterdruck
+unsigned long time_per_taster=1000;
+//Pruefvariable
+int zaehler = 0;
+int pos = 0;
+//Steppermotor Steps eine Runde = 4096
+const int steps_per_click = 1024; 
+
+void setup() {
+  Serial.begin(9600);
+  stepper.setMaxSpeed(900);
+  stepper.setAcceleration(1000);
+  //Taster Pin
+  pinMode(taster, INPUT_PULLUP); //bei INPUT muss der pin auf GND
+}
+
+void loop() {
+//Mit Zeitsteuerung
+//Wenn Taster gedrueckt wird, wird die Motorlaufzeit erhoeht
+  if(digitalRead(taster)==1){
+    taster_state=0;
+    }
+ if(digitalRead(taster)==0){
+    taster_state=1;
+    }
+
+if(taster_state==1){
+  if(taster_state_before==0){
+  pos=pos+steps_per_click;
+  taster_state_before=1; //damit nur einmal pro tasterdruck Zeit erhoeht wird
+  }
+  stepper.moveTo(pos);
+}
+if(taster_state_before==1){
+if(taster_state==0){
+  taster_state_before=0;
+  delay(100);      //enprellen des tasters
+}
+}
+ stepper.setSpeed(700);
+ if(stepper.distanceToGo()>0){
+ stepper.run(); 
+ }
+}
