@@ -1,4 +1,4 @@
-#include <Arduino_LED_Matrix.h>
+#include "Arduino_LED_Matrix.h"
 #include <AccelStepper.h>
 
 ArduinoLEDMatrix matrix;
@@ -8,25 +8,59 @@ const int sensor1Pin = 2;
 const int sensor2Pin = 3;
 const int sensor3Pin = 4;
 
-// 28BYJ-48 mit ULN2003 im 4-Draht-Modus
-// WICHTIG: Reihenfolge 1,3,2,4
-AccelStepper stepper(AccelStepper::FULL4WIRE, 8, 10, 9, 11);
+// Pins für den Schrittmotor (28BYJ-48 an ULN2003)
+const int motorPin1 = 8;
+const int motorPin2 = 9;
+const int motorPin3 = 10;
+const int motorPin4 = 11;
 
-// Schritte pro Umdrehung (angepasst auf 28BYJ-48)
-const int stepsPerRevolution = 2048; // oder dein Wert
+// Motor: FULL4WIRE + richtige Pinreihenfolge (1,3,2,4!)
+AccelStepper stepper(AccelStepper::FULL4WIRE, motorPin1, motorPin3, motorPin2, motorPin4);
 
-// Frames
-uint8_t frame1[8][12] = { /* dein Bild 1 */ };
-uint8_t frame2[8][12] = { /* dein Bild 2 */ };
-uint8_t frame3[8][12] = { /* dein Bild 3 */ };
+// Schritte pro Umdrehung für den 28BYJ-48 Motor (angepasst)
+const int stepsPerRevolution = 1024;
 
-// Task-Struktur für die Queue
-struct Task {
-  uint8_t (*frame)[12];
-  long steps;    // positiv = vorwärts, negativ = rückwärts
+// Zahlen fürs Matrix-Display
+uint8_t frame1[8][12] = {
+  { 0,0,0,0,0,0,1,0,0,0,0,0 },
+  { 0,0,0,0,0,1,1,0,0,0,0,0 },
+  { 0,0,0,0,1,0,1,0,0,0,0,0 },
+  { 0,0,0,1,0,0,1,0,0,0,0,0 },
+  { 0,0,0,0,0,0,1,0,0,0,0,0 },
+  { 0,0,0,0,0,0,1,0,0,0,0,0 },
+  { 0,0,0,0,0,0,1,0,0,0,0,0 },
+  { 0,0,0,0,0,0,0,0,0,0,0,0 }
 };
 
-const int MAX_TASKS = 20;
+uint8_t frame2[8][12] = {
+  { 0,0,0,0,1,1,1,0,0,0,0,0 },
+  { 0,0,0,1,0,0,0,1,0,0,0,0 },
+  { 0,0,0,0,0,0,0,1,0,0,0,0 },
+  { 0,0,0,0,0,0,1,0,0,0,0,0 },
+  { 0,0,0,0,0,1,0,0,0,0,0,0 },
+  { 0,0,0,0,1,0,0,0,0,0,0,0 },
+  { 0,0,0,1,1,1,1,1,0,0,0,0 },
+  { 0,0,0,0,0,0,0,0,0,0,0,0 }
+};
+
+uint8_t frame3[8][12] = {
+  { 0,0,0,0,1,1,1,0,0,0,0,0 },
+  { 0,0,0,0,0,0,0,1,0,0,0,0 },
+  { 0,0,0,0,0,0,1,0,0,0,0,0 },
+  { 0,0,0,0,0,1,1,0,0,0,0,0 },
+  { 0,0,0,0,0,0,0,1,0,0,0,0 },
+  { 0,0,0,0,0,0,0,1,0,0,0,0 },
+  { 0,0,0,0,1,1,1,0,0,0,0,0 },
+  { 0,0,0,0,0,0,0,0,0,0,0,0 }
+};
+
+// Queue-Struktur
+struct Task {
+  uint8_t (*frame)[12];
+  long steps;
+};
+
+const int MAX_TASKS = 20;  // Puffergröße
 Task queue[MAX_TASKS];
 int queueHead = 0;
 int queueTail = 0;
@@ -64,30 +98,30 @@ void setup() {
   pinMode(sensor2Pin, INPUT);
   pinMode(sensor3Pin, INPUT);
 
-  // AccelStepper einstellen
-  stepper.setMaxSpeed(1000.0);      // maximale Geschwindigkeit (Schritte/Sek.)
-  stepper.setAcceleration(300.0);   // Beschleunigung (Schritte/Sek.^2)
+  // Stepper konfigurieren
+  stepper.setMaxSpeed(800.0);     // maximale Geschwindigkeit [steps/s]
+  stepper.setAcceleration(200.0); // Beschleunigung [steps/s^2]
 }
 
 // ---------------------- Loop ----------------------
 void loop() {
   unsigned long now = millis();
 
-  // Sensor 1 → vorwärts 1 Umdrehung
+  // Sensor 1 prüfen
   if (digitalRead(sensor1Pin) == LOW && (now - lastTrigger1 > debounceTime)) {
-    enqueue(frame1, stepsPerRevolution);
+    enqueue(frame1, stepsPerRevolution);   // vorwärts
     lastTrigger1 = now;
   }
 
-  // Sensor 2 → rückwärts 2 Umdrehungen
+  // Sensor 2 prüfen
   if (digitalRead(sensor2Pin) == LOW && (now - lastTrigger2 > debounceTime)) {
-    enqueue(frame2, -2 * stepsPerRevolution);
+    enqueue(frame2, -2 * stepsPerRevolution); // rückwärts
     lastTrigger2 = now;
   }
 
-  // Sensor 3 → vorwärts 3 Umdrehungen
+  // Sensor 3 prüfen
   if (digitalRead(sensor3Pin) == LOW && (now - lastTrigger3 > debounceTime)) {
-    enqueue(frame3, 3 * stepsPerRevolution);
+    enqueue(frame3, 3 * stepsPerRevolution); // vorwärts
     lastTrigger3 = now;
   }
 
@@ -95,15 +129,15 @@ void loop() {
   if (!taskActive && dequeue(currentTask)) {
     taskActive = true;
     matrix.renderBitmap(currentTask.frame, 8, 12);
-    stepper.move(currentTask.steps); // Bewegung starten
+    stepper.move(currentTask.steps);   // Richtung per Vorzeichen
   }
 
-  // Falls Task läuft
+  // Falls Task läuft → Motor bewegen
   if (taskActive) {
     if (stepper.distanceToGo() != 0) {
-      stepper.run();  // AccelStepper abarbeiten
+      stepper.run();
     } else {
-      // Task fertig
+      // Task fertig → Anzeige löschen
       matrix.clear();
       taskActive = false;
     }
