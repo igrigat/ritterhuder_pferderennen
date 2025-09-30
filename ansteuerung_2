@@ -1,60 +1,154 @@
+//#include "Arduino_LED_Matrix.h"
 #include <AccelStepper.h>
-AccelStepper stepper(8, 8, 9, 10, 11);
-unsigned long time_m1=0;
-//Variable für Zustandswechsel
-int taster_state_before = 0;
-// Kugeltaster
-const int taster = 5;
-int taster_state = 0;
-//Millisekunden Motorlaufzeit je Tasterdruck
-unsigned long time_per_taster=1000;
-//Pruefvariable
-int zaehler = 0;
 
+//ArduinoLEDMatrix matrix;
+
+// Pins für die Lichtschranken
+const int sensor1Pin = 2;
+const int sensor2Pin = 3;
+//const int sensor3Pin = 4;
+
+// Pins für den Schrittmotor (28BYJ-48 an ULN2003)
+const int motorPin1 = 8;
+const int motorPin2 = 9;
+const int motorPin3 = 10;
+const int motorPin4 = 11;
+
+// Motor: FULL4WIRE + richtige Pinreihenfolge (1,3,2,4!)
+AccelStepper stepper(AccelStepper::FULL4WIRE, motorPin1, motorPin3, motorPin2, motorPin4);
+
+// Schritte pro Umdrehung für den 28BYJ-48 Motor (angepasst)
+const int stepsPerRevolution = 1024;
+
+/*
+// Zahlen fürs Matrix-Display
+uint8_t frame1[8][12] = {
+  { 0,0,0,0,0,0,1,0,0,0,0,0 },
+  { 0,0,0,0,0,1,1,0,0,0,0,0 },
+  { 0,0,0,0,1,0,1,0,0,0,0,0 },
+  { 0,0,0,1,0,0,1,0,0,0,0,0 },
+  { 0,0,0,0,0,0,1,0,0,0,0,0 },
+  { 0,0,0,0,0,0,1,0,0,0,0,0 },
+  { 0,0,0,0,0,0,1,0,0,0,0,0 },
+  { 0,0,0,0,0,0,0,0,0,0,0,0 }
+};
+
+uint8_t frame2[8][12] = {
+  { 0,0,0,0,1,1,1,0,0,0,0,0 },
+  { 0,0,0,1,0,0,0,1,0,0,0,0 },
+  { 0,0,0,0,0,0,0,1,0,0,0,0 },
+  { 0,0,0,0,0,0,1,0,0,0,0,0 },
+  { 0,0,0,0,0,1,0,0,0,0,0,0 },
+  { 0,0,0,0,1,0,0,0,0,0,0,0 },
+  { 0,0,0,1,1,1,1,1,0,0,0,0 },
+  { 0,0,0,0,0,0,0,0,0,0,0,0 }
+};
+
+uint8_t frame3[8][12] = {
+  { 0,0,0,0,1,1,1,0,0,0,0,0 },
+  { 0,0,0,0,0,0,0,1,0,0,0,0 },
+  { 0,0,0,0,0,0,1,0,0,0,0,0 },
+  { 0,0,0,0,0,1,1,0,0,0,0,0 },
+  { 0,0,0,0,0,0,0,1,0,0,0,0 },
+  { 0,0,0,0,0,0,0,1,0,0,0,0 },
+  { 0,0,0,0,1,1,1,0,0,0,0,0 },
+  { 0,0,0,0,0,0,0,0,0,0,0,0 }
+};
+*/
+// Queue-Struktur
+struct Task {
+  uint8_t (*frame)[12];
+  long steps;
+};
+
+const int MAX_TASKS = 20;  // Puffergröße
+Task queue[MAX_TASKS];
+int queueHead = 0;
+int queueTail = 0;
+bool taskActive = false;
+Task currentTask;
+
+// Sensor-Entprellung
+unsigned long lastTrigger1 = 0;
+unsigned long lastTrigger2 = 0;
+unsigned long lastTrigger3 = 0;
+const unsigned long debounceTime = 200; // ms
+unsigned long pause = 0;
+
+// ---------------------- Queue ----------------------
+void enqueue(uint8_t frame[8][12], long steps) {
+  int nextTail = (queueTail + 1) % MAX_TASKS;
+  if (nextTail != queueHead) {  // nur, wenn nicht voll
+    queue[queueTail].frame = frame;
+    queue[queueTail].steps = steps;
+    queueTail = nextTail;
+  }
+}
+
+bool dequeue(Task &t) {
+  if (queueHead == queueTail) return false; // leer
+  t = queue[queueHead];
+  queueHead = (queueHead + 1) % MAX_TASKS;
+  return true;
+}
+
+// ---------------------- Setup ----------------------
 void setup() {
-  Serial.begin(9600);
-  stepper.setMaxSpeed(900);
-  stepper.setAcceleration(1000);
-  //Taster Pin
-  pinMode(taster, INPUT_PULLUP); //bei INPUT muss der pin auf GND
+  //matrix.begin();
+
+  pinMode(sensor1Pin, INPUT);
+  pinMode(sensor2Pin, INPUT);
+//  pinMode(sensor3Pin, INPUT);
+
+  // Stepper konfigurieren
+  stepper.setMaxSpeed(800.0);     // maximale Geschwindigkeit [steps/s]
+  stepper.setAcceleration(500.0); // Beschleunigung [steps/s^2]
 }
 
+// ---------------------- Loop ----------------------
 void loop() {
-//Mit Zeitsteuerung
-//Wenn Taster gedrueckt wird, wird die Motorlaufzeit erhoeht
-  if(digitalRead(taster)==1){
-    taster_state=0;
+  unsigned long now = millis();
+if (pause+4000<=millis()){
+  // Sensor 1 prüfen
+  if (digitalRead(sensor1Pin) == LOW && (now - lastTrigger1 > debounceTime)) {
+    enqueue(1, stepsPerRevolution);   // vorwärts
+    lastTrigger1 = now;
+    pause=millis();
+  }
+
+  // Sensor 2 prüfen
+  if (digitalRead(sensor2Pin) == LOW && (now - lastTrigger2 > debounceTime)) {
+    enqueue(2, -2 * stepsPerRevolution); // rückwärts
+    lastTrigger2 = now;
+    pause=millis();
+  }
+/*
+  // Sensor 3 prüfen
+  if (digitalRead(sensor3Pin) == LOW && (now - lastTrigger3 > debounceTime)) {
+    enqueue(3, 3 * stepsPerRevolution); // vorwärts
+    lastTrigger3 = now;
+    pause=millis();
+  }
+
+}
+
+*/
+  }
+  // Falls kein Task läuft → neuen starten
+  if (!taskActive && dequeue(currentTask)) {
+    taskActive = true;
+    //matrix.renderBitmap(currentTask.frame, 8, 12);
+    stepper.move(-currentTask.steps);   // Richtung per Vorzeichen
+  }
+
+  // Falls Task läuft → Motor bewegen
+  if (taskActive) {
+    if (stepper.distanceToGo() != 0) {
+      stepper.run();
+    } else {
+      // Task fertig → Anzeige löschen
+     // matrix.clear();
+      taskActive = false;
     }
- if(digitalRead(taster)==0){
-    taster_state=1;
-    }
-
-if(taster_state==1){
-  if(taster_state_before==0){
-  zaehler=zaehler+1;
-
-  if(time_m1 <= millis()){
-    time_m1=millis()+time_per_taster;
   }
-  if(time_m1>millis()){
-    time_m1=time_m1+time_per_taster;
-  }
-
-  taster_state_before=1; //damit nur einmal pro tasterdruck Zeit erhoeht wird
-  Serial.print(" Zaehler: ");
-  Serial.print(zaehler);
-  Serial.print(" timer: ");
-  Serial.print(time_m1);
-  }
-}
-if(taster_state_before==1){
-if(taster_state==0){
-  taster_state_before=0;
-  delay(20);      //enprellen des tasters
-}
-}
-if(time_m1 > millis()){
- stepper.setSpeed(700);
- stepper.runSpeed(); 
-}
 }
