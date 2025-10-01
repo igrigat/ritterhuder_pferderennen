@@ -1,12 +1,17 @@
-#include "Arduino_LED_Matrix.h"
+//#include "Arduino_LED_Matrix.h"
 #include <AccelStepper.h>
 
-ArduinoLEDMatrix matrix;
+//ArduinoLEDMatrix matrix;
 
 // Pins für die Lichtschranken
 const int sensor1Pin = 2;
 const int sensor2Pin = 3;
 const int sensor3Pin = 4;
+
+// Pins für die Endschalter
+const int taster1Pin = 5;
+const int taster2Pin = 6;
+
 
 // Pins für den Schrittmotor (28BYJ-48 an ULN2003)
 const int motorPin1 = 8;
@@ -20,6 +25,7 @@ AccelStepper stepper(AccelStepper::FULL4WIRE, motorPin1, motorPin3, motorPin2, m
 // Schritte pro Umdrehung für den 28BYJ-48 Motor (angepasst)
 const int stepsPerRevolution = 1024;
 
+/*
 // Zahlen fürs Matrix-Display
 uint8_t frame1[8][12] = {
   { 0,0,0,0,0,0,1,0,0,0,0,0 },
@@ -53,7 +59,7 @@ uint8_t frame3[8][12] = {
   { 0,0,0,0,1,1,1,0,0,0,0,0 },
   { 0,0,0,0,0,0,0,0,0,0,0,0 }
 };
-
+*/
 // Queue-Struktur
 struct Task {
   uint8_t (*frame)[12];
@@ -72,6 +78,7 @@ unsigned long lastTrigger1 = 0;
 unsigned long lastTrigger2 = 0;
 unsigned long lastTrigger3 = 0;
 const unsigned long debounceTime = 200; // ms
+unsigned long pause = 0;
 
 // ---------------------- Queue ----------------------
 void enqueue(uint8_t frame[8][12], long steps) {
@@ -92,44 +99,52 @@ bool dequeue(Task &t) {
 
 // ---------------------- Setup ----------------------
 void setup() {
-  matrix.begin();
+  //matrix.begin();
 
   pinMode(sensor1Pin, INPUT);
   pinMode(sensor2Pin, INPUT);
   pinMode(sensor3Pin, INPUT);
+  pinMode(taster1Pin, INPUT_PULLUP);
+  pinMode(taster2Pin, INPUT_PULLUP);
 
   // Stepper konfigurieren
-  stepper.setMaxSpeed(800.0);     // maximale Geschwindigkeit [steps/s]
-  stepper.setAcceleration(200.0); // Beschleunigung [steps/s^2]
+  stepper.setMaxSpeed(950.0);     // maximale Geschwindigkeit [steps/s]
+  stepper.setAcceleration(20000); // Beschleunigung [steps/s^2]
 }
 
 // ---------------------- Loop ----------------------
 void loop() {
   unsigned long now = millis();
-
+if (pause+4000<=millis()){
   // Sensor 1 prüfen
   if (digitalRead(sensor1Pin) == LOW && (now - lastTrigger1 > debounceTime)) {
-    enqueue(frame1, stepsPerRevolution);   // vorwärts
+    enqueue(1, stepsPerRevolution);   // vorwärts
     lastTrigger1 = now;
+    pause=millis();
   }
 
   // Sensor 2 prüfen
   if (digitalRead(sensor2Pin) == LOW && (now - lastTrigger2 > debounceTime)) {
-    enqueue(frame2, -2 * stepsPerRevolution); // rückwärts
+    enqueue(2, 2 * stepsPerRevolution); // rückwärts
     lastTrigger2 = now;
+    pause=millis();
   }
 
   // Sensor 3 prüfen
   if (digitalRead(sensor3Pin) == LOW && (now - lastTrigger3 > debounceTime)) {
-    enqueue(frame3, 3 * stepsPerRevolution); // vorwärts
+    enqueue(3, 3 * stepsPerRevolution); // vorwärts
     lastTrigger3 = now;
+    pause=millis();
   }
 
+}
+
+  }
   // Falls kein Task läuft → neuen starten
   if (!taskActive && dequeue(currentTask)) {
     taskActive = true;
-    matrix.renderBitmap(currentTask.frame, 8, 12);
-    stepper.move(currentTask.steps);   // Richtung per Vorzeichen
+    //matrix.renderBitmap(currentTask.frame, 8, 12);
+    stepper.move(-currentTask.steps);   // Richtung per Vorzeichen
   }
 
   // Falls Task läuft → Motor bewegen
@@ -138,8 +153,18 @@ void loop() {
       stepper.run();
     } else {
       // Task fertig → Anzeige löschen
-      matrix.clear();
+     // matrix.clear();
       taskActive = false;
     }
   }
+//// SOWAS für die Rückfahrt
+  if (taster1Pin==1){
+    while(true){
+    stepper.RunSpeed(-500)
+    if (taster2Pin==1){
+      break;;
+    }
+    }
+  }
+
 }
