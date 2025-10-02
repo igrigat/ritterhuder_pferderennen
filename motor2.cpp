@@ -1,90 +1,49 @@
-//#include "Arduino_LED_Matrix.h"
 #include <AccelStepper.h>
 
-//ArduinoLEDMatrix matrix;
-
-// Pins für die Lichtschranken
+// ---------------------- Pinbelegung ----------------------
+// Lichtschranken
 const int sensor1Pin = 2;
 const int sensor2Pin = 3;
 const int sensor3Pin = 4;
 
-// Pins für die Endschalter
-const int taster1Pin = 5;
-const int taster2Pin = 6;
-
-
-// Pins für den Schrittmotor (28BYJ-48 an ULN2003)
+// Schrittmotor (28BYJ-48 an ULN2003)
 const int motorPin1 = 8;
 const int motorPin2 = 9;
 const int motorPin3 = 10;
 const int motorPin4 = 11;
 
-// Motor: FULL4WIRE + richtige Pinreihenfolge (1,3,2,4!)
+// LED für Motoraktivität
+const int ledPin = 13;  // interne Arduino-LED
+
+// Richtige Reihenfolge: 1,3,2,4
 AccelStepper stepper(AccelStepper::FULL4WIRE, motorPin1, motorPin3, motorPin2, motorPin4);
 
-// Schritte pro Umdrehung für den 28BYJ-48 Motor (angepasst)
-const int stepsPerRevolution = 1024;
+// Schritte pro Umdrehung für den 28BYJ-48
+const int stepsPerRevolution = 4096;
 
-/*
-// Zahlen fürs Matrix-Display
-uint8_t frame1[8][12] = {
-  { 0,0,0,0,0,0,1,0,0,0,0,0 },
-  { 0,0,0,0,0,1,1,0,0,0,0,0 },
-  { 0,0,0,0,1,0,1,0,0,0,0,0 },
-  { 0,0,0,1,0,0,1,0,0,0,0,0 },
-  { 0,0,0,0,0,0,1,0,0,0,0,0 },
-  { 0,0,0,0,0,0,1,0,0,0,0,0 },
-  { 0,0,0,0,0,0,1,0,0,0,0,0 },
-  { 0,0,0,0,0,0,0,0,0,0,0,0 }
-};
-
-uint8_t frame2[8][12] = {
-  { 0,0,0,0,1,1,1,0,0,0,0,0 },
-  { 0,0,0,1,0,0,0,1,0,0,0,0 },
-  { 0,0,0,0,0,0,0,1,0,0,0,0 },
-  { 0,0,0,0,0,0,1,0,0,0,0,0 },
-  { 0,0,0,0,0,1,0,0,0,0,0,0 },
-  { 0,0,0,0,1,0,0,0,0,0,0,0 },
-  { 0,0,0,1,1,1,1,1,0,0,0,0 },
-  { 0,0,0,0,0,0,0,0,0,0,0,0 }
-};
-
-uint8_t frame3[8][12] = {
-  { 0,0,0,0,1,1,1,0,0,0,0,0 },
-  { 0,0,0,0,0,0,0,1,0,0,0,0 },
-  { 0,0,0,0,0,0,1,0,0,0,0,0 },
-  { 0,0,0,0,0,1,1,0,0,0,0,0 },
-  { 0,0,0,0,0,0,0,1,0,0,0,0 },
-  { 0,0,0,0,0,0,0,1,0,0,0,0 },
-  { 0,0,0,0,1,1,1,0,0,0,0,0 },
-  { 0,0,0,0,0,0,0,0,0,0,0,0 }
-};
-*/
-// Queue-Struktur
+// ---------------------- Queue-Struktur ----------------------
 struct Task {
-  uint8_t (*frame)[12];
   long steps;
 };
 
-const int MAX_TASKS = 20;  // Puffergröße
+const int MAX_TASKS = 20;
 Task queue[MAX_TASKS];
 int queueHead = 0;
 int queueTail = 0;
 bool taskActive = false;
 Task currentTask;
 
-// Sensor-Entprellung
+// ---------------------- Entprellung ----------------------
 unsigned long lastTrigger1 = 0;
 unsigned long lastTrigger2 = 0;
 unsigned long lastTrigger3 = 0;
 const unsigned long debounceTime = 200; // ms
 unsigned long pause = 0;
 
-// ---------------------- Queue ----------------------
-void enqueue(uint8_t frame[8][12], long steps) {
+// ---------------------- Queue-Funktionen ----------------------
+void enqueue(long steps) {
   int nextTail = (queueTail + 1) % MAX_TASKS;
-  if (nextTail != queueHead) {  // nur, wenn nicht voll
-    queue[queueTail].frame = frame;
+  if (nextTail != queueHead) {
     queue[queueTail].steps = steps;
     queueTail = nextTail;
   }
@@ -99,72 +58,56 @@ bool dequeue(Task &t) {
 
 // ---------------------- Setup ----------------------
 void setup() {
-  //matrix.begin();
+  pinMode(sensor1Pin, INPUT_PULLUP);
+  pinMode(sensor2Pin, INPUT_PULLUP);
+  pinMode(sensor3Pin, INPUT_PULLUP);
+  pinMode(ledPin, OUTPUT);
 
-  pinMode(sensor1Pin, INPUT);
-  pinMode(sensor2Pin, INPUT);
-  pinMode(sensor3Pin, INPUT);
-  pinMode(taster1Pin, INPUT_PULLUP);
-  pinMode(taster2Pin, INPUT_PULLUP);
-
-  // Stepper konfigurieren
-  stepper.setMaxSpeed(950.0);     // maximale Geschwindigkeit [steps/s]
-  stepper.setAcceleration(20000); // Beschleunigung [steps/s^2]
+  // Stabile Werte für 28BYJ-48
+  stepper.setMaxSpeed(682);      // Schritte/Sekunde
+  stepper.setAcceleration(200);   // Schritte/Sekunde²
 }
 
 // ---------------------- Loop ----------------------
 void loop() {
   unsigned long now = millis();
-if (pause+4000<=millis()){
-  // Sensor 1 prüfen
-  if (digitalRead(sensor1Pin) == LOW && (now - lastTrigger1 > debounceTime)) {
-    enqueue(1, stepsPerRevolution);   // vorwärts
-    lastTrigger1 = now;
-    pause=millis();
+
+  // --- Neue Aufgaben nur alle 4s zulassen ---
+  if (pause + 4000 <= now) {
+    if (digitalRead(sensor1Pin) == LOW && (now - lastTrigger1 > debounceTime)) {
+      enqueue(+stepsPerRevolution);   // 1 Umdrehung vorwärts
+      lastTrigger1 = now;
+      pause = now;
+    }
+
+    if (digitalRead(sensor2Pin) == LOW && (now - lastTrigger2 > debounceTime)) {
+      enqueue(-stepsPerRevolution);   // 1 Umdrehung rückwärts
+      lastTrigger2 = now;
+      pause = now;
+    }
+
+    if (digitalRead(sensor3Pin) == LOW && (now - lastTrigger3 > debounceTime)) {
+      enqueue(+2 * stepsPerRevolution); // 2 Umdrehungen vorwärts
+      lastTrigger3 = now;
+      pause = now;
+    }
   }
 
-  // Sensor 2 prüfen
-  if (digitalRead(sensor2Pin) == LOW && (now - lastTrigger2 > debounceTime)) {
-    enqueue(2, 2 * stepsPerRevolution); // rückwärts
-    lastTrigger2 = now;
-    pause=millis();
-  }
-
-  // Sensor 3 prüfen
-  if (digitalRead(sensor3Pin) == LOW && (now - lastTrigger3 > debounceTime)) {
-    enqueue(3, 3 * stepsPerRevolution); // vorwärts
-    lastTrigger3 = now;
-    pause=millis();
-  }
-
-}
-
-  }
-  // Falls kein Task läuft → neuen starten
+  // --- Motorsteuerung über Queue ---
   if (!taskActive && dequeue(currentTask)) {
+    stepper.move(currentTask.steps);
     taskActive = true;
-    //matrix.renderBitmap(currentTask.frame, 8, 12);
-    stepper.move(-currentTask.steps);   // Richtung per Vorzeichen
+    digitalWrite(ledPin, HIGH);  // LED an beim Start
   }
 
-  // Falls Task läuft → Motor bewegen
   if (taskActive) {
     if (stepper.distanceToGo() != 0) {
-      stepper.run();
+      stepper.run(); // Motor Schritt für Schritt bewegen
     } else {
-      // Task fertig → Anzeige löschen
-     // matrix.clear();
-      taskActive = false;
+      taskActive = false;         // Aufgabe fertig
+      digitalWrite(ledPin, LOW);  // LED aus, wenn Aufgabe abgeschlossen
     }
+  } else {
+    stepper.run(); // im Leerlauf weiter aufrufen
   }
-//// SOWAS für die Rückfahrt
-  if (taster1Pin==1){
-    while(true){
-    stepper.RunSpeed(-500)
-    if (taster2Pin==1){
-      break;;
-    }
-    }
-  }
-
 }
