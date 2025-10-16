@@ -1,13 +1,12 @@
 #include <AccelStepper.h>
 
 // ---------------------- Pinbelegung ----------------------
-// Lichtschranken
-const int sensor1Pin = 2; // Loch 1
-const int sensor2Pin = 3; // Loch 2
-const int sensor3Pin = 4; // Loch 3
-const int sensor4Pin = 5; // Sensor Anfangsposition (Stopper für Taster)
-const int sensor5Pin = 6; // Sensor Endposition (Endschalter)
-const int taster6Pin = 7; // Start-Taster (Motor läuft bis sensor4 aktiv)
+const int sensor1Pin = 2;  // Loch 1
+const int sensor2Pin = 3;  // Loch 2
+const int sensor3Pin = 4;  // Loch 3
+const int sensor4Pin = 5; // Sensor Anfangsposition
+const int sensor5Pin = 6; // Sensor Endposition
+const int taster6Pin = 7; // Start-Taster
 
 // Schrittmotor (28BYJ-48 an ULN2003)
 const int motorPin1 = 8;
@@ -16,19 +15,15 @@ const int motorPin3 = 10;
 const int motorPin4 = 11;
 
 // LED für Motoraktivität
-const int ledPin = 13;  // interne Arduino-LED
+const int ledPin = 13;
 
-// Richtige Reihenfolge: 1,3,2,4
 AccelStepper stepper(AccelStepper::FULL4WIRE, motorPin1, motorPin3, motorPin2, motorPin4);
 
-// Schritte pro Umdrehung für den 28BYJ-48
+// Schritte pro Umdrehung
 const int stepsPerRevolution = 4096;
 
 // ---------------------- Queue-Struktur ----------------------
-struct Task {
-  long steps;
-};
-
+struct Task { long steps; };
 const int MAX_TASKS = 20;
 Task queue[MAX_TASKS];
 int queueHead = 0;
@@ -40,11 +35,11 @@ Task currentTask;
 unsigned long lastTrigger1 = 0;
 unsigned long lastTrigger2 = 0;
 unsigned long lastTrigger3 = 0;
-const unsigned long debounceTime = 200; // ms
+const unsigned long debounceTime = 200;
 unsigned long pause = 0;
 
 // ---------------------- Lauf-Status ----------------------
-bool manualRunActive = false;  // true, wenn Motor über Taster läuft
+bool manualRunActive = false;
 
 // ---------------------- Queue-Funktionen ----------------------
 void enqueue(long steps) {
@@ -54,12 +49,27 @@ void enqueue(long steps) {
     queueTail = nextTail;
   }
 }
-
 bool dequeue(Task &t) {
-  if (queueHead == queueTail) return false; // leer
+  if (queueHead == queueTail) return false;
   t = queue[queueHead];
   queueHead = (queueHead + 1) % MAX_TASKS;
   return true;
+}
+
+// ---------------------- Coil-Steuerung ----------------------
+// --> Neu hinzugefügt
+void disableCoils() {
+  digitalWrite(motorPin1, LOW);
+  digitalWrite(motorPin2, LOW);
+  digitalWrite(motorPin3, LOW);
+  digitalWrite(motorPin4, LOW);
+}
+
+void enableCoils() {
+  pinMode(motorPin1, OUTPUT);
+  pinMode(motorPin2, OUTPUT);
+  pinMode(motorPin3, OUTPUT);
+  pinMode(motorPin4, OUTPUT);
 }
 
 // ---------------------- Setup ----------------------
@@ -72,8 +82,9 @@ void setup() {
   pinMode(taster6Pin, INPUT_PULLUP);
   pinMode(ledPin, OUTPUT);
 
-  stepper.setMaxSpeed(682);      // Schritte/Sekunde
-  stepper.setAcceleration(200);  // Schritte/Sekunde²
+  stepper.setMaxSpeed(1500);      // leicht erhöhte, aber sichere Drehzahl
+  stepper.setAcceleration(800);
+  disableCoils(); // Spulen beim Start aus
 }
 
 // ---------------------- Loop ----------------------
@@ -83,58 +94,55 @@ void loop() {
   // --- Manuelle Steuerung über Taster ---
   if (digitalRead(taster6Pin) == LOW && !manualRunActive) {
     manualRunActive = true;
+    enableCoils(); // Spulen aktivieren
     digitalWrite(ledPin, HIGH);
-    stepper.setSpeed(400); // konstante Drehgeschwindigkeit (vorwärts)
+    stepper.setSpeed(400);
   }
 
-  // Wenn manuell aktiv: Motor läuft, bis sensor4 LOW meldet
   if (manualRunActive) {
     if (digitalRead(sensor4Pin) == LOW) {
       manualRunActive = false;
       stepper.stop();
+      disableCoils(); // Spulen deaktivieren
       digitalWrite(ledPin, LOW);
     } else {
       stepper.runSpeed();
-      return; // Queue-Logik überspringen, solange manuell läuft
+      return;
     }
   }
 
   // --- Endschalter-Schutz ---
   bool endPositionAktiv = (digitalRead(sensor5Pin) == LOW);
 
-  // --- Neue Aufgaben nur alle 4s zulassen ---
+  // --- Neue Aufgaben nur erlauben, wenn Endschalter nicht aktiv ---
   if (!endPositionAktiv && pause + 4000 <= now) {
     if (digitalRead(sensor1Pin) == LOW && (now - lastTrigger1 > debounceTime)) {
-      enqueue(+stepsPerRevolution);   // 1 Umdrehung vorwärts
-      lastTrigger1 = now;
-      pause = now;
+      enqueue(+stepsPerRevolution);
+      lastTrigger1 = now; pause = now;
     }
-
     if (digitalRead(sensor2Pin) == LOW && (now - lastTrigger2 > debounceTime)) {
-      enqueue(+2 * stepsPerRevolution);   // 2 Umdrehungen vorwärts
-      lastTrigger2 = now;
-      pause = now;
+      enqueue(+2 * stepsPerRevolution);
+      lastTrigger2 = now; pause = now;
     }
-
     if (digitalRead(sensor3Pin) == LOW && (now - lastTrigger3 > debounceTime)) {
-      enqueue(+3 * stepsPerRevolution); // 3 Umdrehungen vorwärts
-      lastTrigger3 = now;
-      pause = now;
+      enqueue(+3 * stepsPerRevolution);
+      lastTrigger3 = now; pause = now;
     }
   }
 
-  // --- Wenn Endschalter aktiv: Queue leeren ---
   if (endPositionAktiv) {
-    queueHead = queueTail;   // alle noch offenen Aufgaben verwerfen
-    taskActive = false;      // falls Motor im Leerlauf
+    queueHead = queueTail;   // alle Aufgaben löschen
+    taskActive = false;
+    disableCoils();          // Motor komplett stromlos
     digitalWrite(ledPin, LOW);
   }
 
   // --- Motorsteuerung über Queue ---
   if (!taskActive && dequeue(currentTask)) {
+    enableCoils(); // Spulen aktivieren, bevor Motor läuft
     stepper.move(currentTask.steps);
     taskActive = true;
-    digitalWrite(ledPin, HIGH);  // LED an beim Start
+    digitalWrite(ledPin, HIGH);
   }
 
   if (taskActive) {
@@ -142,9 +150,10 @@ void loop() {
       stepper.run();
     } else {
       taskActive = false;
+      disableCoils(); // Bewegung fertig → Spulen aus
       digitalWrite(ledPin, LOW);
     }
   } else {
-    stepper.run(); // im Leerlauf weiter aufrufen
+    disableCoils(); // falls kein Task aktiv ist
   }
 }
