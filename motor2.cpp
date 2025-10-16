@@ -82,7 +82,7 @@ void setup() {
   pinMode(taster6Pin, INPUT_PULLUP);
   pinMode(ledPin, OUTPUT);
 
-  stepper.setMaxSpeed(1500);      // leicht erhöhte, aber sichere Drehzahl
+  stepper.setMaxSpeed(1000);
   stepper.setAcceleration(800);
   disableCoils(); // Spulen beim Start aus
 }
