@@ -1,7 +1,4 @@
-//#include "Arduino_LED_Matrix.h"
 #include <AccelStepper.h>
-
-//ArduinoLEDMatrix matrix;
 
 // Pins für die Lichtschranken
 const int sensor1Pin = 2;
@@ -20,41 +17,7 @@ AccelStepper stepper(AccelStepper::FULL4WIRE, motorPin1, motorPin3, motorPin2, m
 // Schritte pro Umdrehung für den 28BYJ-48 Motor (angepasst)
 const int stepsPerRevolution = 1024;
 
-/*
-// Zahlen fürs Matrix-Display
-uint8_t frame1[8][12] = {
-  { 0,0,0,0,0,0,1,0,0,0,0,0 },
-  { 0,0,0,0,0,1,1,0,0,0,0,0 },
-  { 0,0,0,0,1,0,1,0,0,0,0,0 },
-  { 0,0,0,1,0,0,1,0,0,0,0,0 },
-  { 0,0,0,0,0,0,1,0,0,0,0,0 },
-  { 0,0,0,0,0,0,1,0,0,0,0,0 },
-  { 0,0,0,0,0,0,1,0,0,0,0,0 },
-  { 0,0,0,0,0,0,0,0,0,0,0,0 }
-};
 
-uint8_t frame2[8][12] = {
-  { 0,0,0,0,1,1,1,0,0,0,0,0 },
-  { 0,0,0,1,0,0,0,1,0,0,0,0 },
-  { 0,0,0,0,0,0,0,1,0,0,0,0 },
-  { 0,0,0,0,0,0,1,0,0,0,0,0 },
-  { 0,0,0,0,0,1,0,0,0,0,0,0 },
-  { 0,0,0,0,1,0,0,0,0,0,0,0 },
-  { 0,0,0,1,1,1,1,1,0,0,0,0 },
-  { 0,0,0,0,0,0,0,0,0,0,0,0 }
-};
-
-uint8_t frame3[8][12] = {
-  { 0,0,0,0,1,1,1,0,0,0,0,0 },
-  { 0,0,0,0,0,0,0,1,0,0,0,0 },
-  { 0,0,0,0,0,0,1,0,0,0,0,0 },
-  { 0,0,0,0,0,1,1,0,0,0,0,0 },
-  { 0,0,0,0,0,0,0,1,0,0,0,0 },
-  { 0,0,0,0,0,0,0,1,0,0,0,0 },
-  { 0,0,0,0,1,1,1,0,0,0,0,0 },
-  { 0,0,0,0,0,0,0,0,0,0,0,0 }
-};
-*/
 // Queue-Struktur
 struct Task {
   uint8_t (*frame)[12];
@@ -137,7 +100,6 @@ if (pause+4000<=millis()){
   // Falls kein Task läuft → neuen starten
   if (!taskActive && dequeue(currentTask)) {
     taskActive = true;
-    //matrix.renderBitmap(currentTask.frame, 8, 12);
     stepper.move(-currentTask.steps);   // Richtung per Vorzeichen
   }
 
@@ -146,8 +108,6 @@ if (pause+4000<=millis()){
     if (stepper.distanceToGo() != 0) {
       stepper.run();
     } else {
-      // Task fertig → Anzeige löschen
-     // matrix.clear();
       taskActive = false;
     }
   }
