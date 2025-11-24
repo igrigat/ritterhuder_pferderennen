@@ -82,8 +82,8 @@ void setup() {
   pinMode(taster6Pin, INPUT_PULLUP);
   pinMode(ledPin, OUTPUT);
 
-  stepper.setMaxSpeed(1000);
-  stepper.setAcceleration(800);
+  stepper.setMaxSpeed(950);
+  stepper.setAcceleration(1000);
   disableCoils(); // Spulen beim Start aus
 }
 
@@ -117,15 +117,15 @@ void loop() {
   // --- Neue Aufgaben nur erlauben, wenn Endschalter nicht aktiv ---
   if (!endPositionAktiv && pause + 4000 <= now) {
     if (digitalRead(sensor1Pin) == LOW && (now - lastTrigger1 > debounceTime)) {
-      enqueue(+stepsPerRevolution);
+      enqueue(-stepsPerRevolution);
       lastTrigger1 = now; pause = now;
     }
     if (digitalRead(sensor2Pin) == LOW && (now - lastTrigger2 > debounceTime)) {
-      enqueue(+2 * stepsPerRevolution);
+      enqueue(-2 * stepsPerRevolution);
       lastTrigger2 = now; pause = now;
     }
     if (digitalRead(sensor3Pin) == LOW && (now - lastTrigger3 > debounceTime)) {
-      enqueue(+3 * stepsPerRevolution);
+      enqueue(-3 * stepsPerRevolution);
       lastTrigger3 = now; pause = now;
     }
   }
@@ -147,6 +147,7 @@ void loop() {
 
   if (taskActive) {
     if (stepper.distanceToGo() != 0) {
+      stepper.setSpeed(-620);
       stepper.run();
     } else {
       taskActive = false;
