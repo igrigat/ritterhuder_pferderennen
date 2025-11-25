@@ -20,7 +20,7 @@ const int ledPin = 13;
 AccelStepper stepper(AccelStepper::FULL4WIRE, motorPin1, motorPin3, motorPin2, motorPin4);
 
 // Schritte pro Umdrehung
-const int stepsPerRevolution = 4096;
+const int stepsPerRevolution = 2048;
 
 // ---------------------- Queue-Struktur ----------------------
 struct Task { long steps; };
@@ -29,6 +29,7 @@ Task queue[MAX_TASKS];
 int queueHead = 0;
 int queueTail = 0;
 bool taskActive = false;
+bool endPositionAktiv = false;
 Task currentTask;
 
 // ---------------------- Entprellung ----------------------
@@ -82,13 +83,14 @@ void setup() {
   pinMode(taster6Pin, INPUT_PULLUP);
   pinMode(ledPin, OUTPUT);
 
-  stepper.setMaxSpeed(950);
-  stepper.setAcceleration(1000);
+  stepper.setMaxSpeed(800);
+  stepper.setAcceleration(100);
   disableCoils(); // Spulen beim Start aus
 }
 
 // ---------------------- Loop ----------------------
 void loop() {
+  Serial.begin(9600);
   unsigned long now = millis();
 
   // --- Manuelle Steuerung über Taster ---
@@ -111,8 +113,14 @@ void loop() {
     }
   }
 
-  // --- Endschalter-Schutz ---
-  bool endPositionAktiv = (digitalRead(sensor5Pin) == LOW);
+  // --- Endschalter-Schutz FINISH---
+  if (digitalRead(sensor5Pin) == LOW){
+    while(digitalRead(sensor4Pin) != LOW){
+      stepper.setSpeed(500);
+      stepper.run();
+      /////hier fehlt noch QUeue leeren ---------------------------------
+    }
+  }
 
   // --- Neue Aufgaben nur erlauben, wenn Endschalter nicht aktiv ---
   if (!endPositionAktiv && pause + 4000 <= now) {
@@ -130,7 +138,7 @@ void loop() {
     }
   }
 
-  if (endPositionAktiv) {
+  if (endPositionAktiv == 1) {
     queueHead = queueTail;   // alle Aufgaben löschen
     taskActive = false;
     disableCoils();          // Motor komplett stromlos
@@ -147,8 +155,10 @@ void loop() {
 
   if (taskActive) {
     if (stepper.distanceToGo() != 0) {
-      stepper.setSpeed(-620);
+      stepper.setSpeed(-500);
       stepper.run();
+     
+
     } else {
       taskActive = false;
       disableCoils(); // Bewegung fertig → Spulen aus
