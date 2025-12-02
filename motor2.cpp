@@ -118,7 +118,8 @@ void loop() {
     while(digitalRead(sensor4Pin) != LOW){
       stepper.setSpeed(500);
       stepper.run();
-      /////hier fehlt noch QUeue leeren ---------------------------------
+     //Queue leeren vielleicht so?:
+      dequeue();
     }
   }
 
