@@ -59,7 +59,7 @@ digitalWrite(bahnBLAUout, HIGH);
 digitalWrite(bahnGRUENout, HIGH);
 
 //ROT gewinnt
-if (digitalRead(bahnGRUENin) == LOW){
+if (digitalRead(bahnROTin) == LOW){
 digitalWrite(bahnROTout, LOW);
 digitalWrite(bahnGELBout, LOW);
 digitalWrite(bahnBLAUout, LOW);
@@ -144,7 +144,7 @@ pixels.setPixelColor(0, pixels.Color(100, 100, 0));
     delay(200);
     } 
     }
-if (digitalRead(bahnROTin) == LOW){
+if (digitalRead(bahnBLAUin) == LOW){
 digitalWrite(bahnROTout, LOW);
 digitalWrite(bahnGELBout, LOW);
 digitalWrite(bahnBLAUout, LOW);
@@ -186,7 +186,7 @@ pixels.setPixelColor(0, pixels.Color(100, 0, 0));
     delay(200);
     } 
     }
-if (digitalRead(bahnBLAUin) == LOW){
+if (digitalRead(bahnGRUENin) == LOW){
 digitalWrite(bahnROTout, LOW);
 digitalWrite(bahnGELBout, LOW);
 digitalWrite(bahnBLAUout, LOW);
@@ -228,5 +228,21 @@ pixels.setPixelColor(0, pixels.Color(0, 0, 100));
     delay(200);
     } 
     }
+    pixels.setPixelColor(0, pixels.Color(50, 50, 50));
+  pixels.setPixelColor(1, pixels.Color(50, 50, 50));
+  pixels.setPixelColor(2, pixels.Color(50, 50, 50));
+  pixels.setPixelColor(3, pixels.Color(50, 50, 50));
+  pixels.setPixelColor(4, pixels.Color(50, 50, 50));
+  pixels.setPixelColor(5, pixels.Color(50, 50, 50));
+  pixels.setPixelColor(6, pixels.Color(50, 50, 50));
+  pixels.setPixelColor(7, pixels.Color(50, 50, 50));
+  pixels.setPixelColor(8, pixels.Color(50, 50, 50));
+  pixels.setPixelColor(9, pixels.Color(50, 50, 50));
+  pixels.setPixelColor(10, pixels.Color(50, 50, 50));
+  pixels.setPixelColor(11, pixels.Color(50, 50, 50));
+  pixels.setPixelColor(12, pixels.Color(50, 50, 50));
+  pixels.setPixelColor(13, pixels.Color(50, 50, 50));
+  pixels.setPixelColor(14, pixels.Color(50, 50, 50));
+    pixels.show();
 
 }
