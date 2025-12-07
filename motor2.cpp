@@ -116,10 +116,14 @@ void loop() {
   // --- Endschalter-Schutz FINISH---
   if (digitalRead(sensor5Pin) == LOW){
     while(digitalRead(sensor4Pin) != LOW){
-      stepper.setSpeed(500);
+      stepper.setSpeed(600);                //vorher 500 !!!!
       stepper.run();
      //Queue leeren vielleicht so?:
-      dequeue();
+      queueHead = queueTail;
+      taskActive = false;
+    }
+    while(digitalRead(sensor5Pin) != LOW){
+      //warten auf Startsignal
     }
   }
 
@@ -155,8 +159,8 @@ void loop() {
   }
 
   if (taskActive) {
-    if (stepper.distanceToGo() != 0) {
-      stepper.setSpeed(-500);
+    if (stepper.distanceToGo() != 0) {  
+      stepper.setSpeed(-600);               // vorher 500 !!
       stepper.run();
      
 
