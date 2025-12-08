@@ -4,9 +4,9 @@
 const int sensor1Pin = 2;  // Loch 1
 const int sensor2Pin = 3;  // Loch 2
 const int sensor3Pin = 4;  // Loch 3
-const int sensor4Pin = 5; // Sensor Anfangsposition
-const int sensor5Pin = 6; // Sensor Endposition
-const int taster6Pin = 7; // Start-Taster
+const int sensor4Pin = 5;  // Sensor Anfangsposition (Start)
+const int sensor5Pin = 6;  // Sensor Endposition (Finish)
+const int taster6Pin = 7;  // Start-/Reset-Taster
 
 // Schrittmotor (28BYJ-48 an ULN2003)
 const int motorPin1 = 8;
@@ -22,6 +22,10 @@ AccelStepper stepper(AccelStepper::FULL4WIRE, motorPin1, motorPin3, motorPin2, m
 // Schritte pro Umdrehung
 const int stepsPerRevolution = 2048;
 
+// ---------------------- Motor-Parameter ----------------------
+const float MOTOR_SPEED  = 600.0;  // überall gleiche Drehzahl (Schritte/Sek.)
+const float MOTOR_ACCEL  = 800.0;  // Beschleunigung für Queue-Fahrten
+
 // ---------------------- Queue-Struktur ----------------------
 struct Task { long steps; };
 const int MAX_TASKS = 20;
@@ -30,6 +34,7 @@ int queueHead = 0;
 int queueTail = 0;
 bool taskActive = false;
 bool endPositionAktiv = false;
+bool homingActive = false;     // automatisches Zurückfahren von Finish zu Start
 Task currentTask;
 
 // ---------------------- Entprellung ----------------------
@@ -58,7 +63,6 @@ bool dequeue(Task &t) {
 }
 
 // ---------------------- Coil-Steuerung ----------------------
-// --> Neu hinzugefügt
 void disableCoils() {
   digitalWrite(motorPin1, LOW);
   digitalWrite(motorPin2, LOW);
@@ -75,6 +79,8 @@ void enableCoils() {
 
 // ---------------------- Setup ----------------------
 void setup() {
+  Serial.begin(9600);
+
   pinMode(sensor1Pin, INPUT_PULLUP);
   pinMode(sensor2Pin, INPUT_PULLUP);
   pinMode(sensor3Pin, INPUT_PULLUP);
@@ -83,93 +89,114 @@ void setup() {
   pinMode(taster6Pin, INPUT_PULLUP);
   pinMode(ledPin, OUTPUT);
 
-  stepper.setMaxSpeed(800);
-  stepper.setAcceleration(100);
+  stepper.setMaxSpeed(MOTOR_SPEED);   // überall gleiche Endgeschwindigkeit
+  stepper.setAcceleration(MOTOR_ACCEL);
+
   disableCoils(); // Spulen beim Start aus
 }
 
 // ---------------------- Loop ----------------------
 void loop() {
-  Serial.begin(9600);
   unsigned long now = millis();
 
-  // --- Manuelle Steuerung über Taster ---
-  if (digitalRead(taster6Pin) == LOW && !manualRunActive) {
+  // Endposition-Status (Sensor 5)
+  endPositionAktiv = (digitalRead(sensor5Pin) == LOW);
+
+  // -------------------------------------------------------------------
+  // 1) Manuelle Steuerung: Taster -> Motor läuft bis Start-Sensor (4)
+  // -------------------------------------------------------------------
+  if (digitalRead(taster6Pin) == LOW && !manualRunActive && !homingActive && !taskActive) {
     manualRunActive = true;
-    enableCoils(); // Spulen aktivieren
+    enableCoils();
     digitalWrite(ledPin, HIGH);
-    stepper.setSpeed(400);
+    stepper.setSpeed(+MOTOR_SPEED);     // Richtung: Start (sensor4)
   }
 
   if (manualRunActive) {
     if (digitalRead(sensor4Pin) == LOW) {
+      // Startposition erreicht
       manualRunActive = false;
-      stepper.stop();
-      disableCoils(); // Spulen deaktivieren
+      disableCoils();
+      digitalWrite(ledPin, LOW);
+    } else {
+      stepper.runSpeed();               // konstante Geschwindigkeit
+      return;                           // andere Logik aussetzen, solange manuell
+    }
+  }
+
+  // -------------------------------------------------------------------
+  // 2) Automatisches Zurückfahren, wenn Finish (5) aktiv, aber nicht an Start (4)
+  // -------------------------------------------------------------------
+  if (!manualRunActive && !taskActive && !homingActive &&
+      (digitalRead(sensor5Pin) == LOW) && (digitalRead(sensor4Pin) == HIGH)) {
+
+    homingActive = true;
+    enableCoils();
+    digitalWrite(ledPin, HIGH);
+    stepper.setSpeed(+MOTOR_SPEED);     // gleiche Geschwindigkeit Richtung Start
+
+    // Queue leeren, damit nichts mehr nachläuft
+    queueHead = queueTail;
+  }
+
+  if (homingActive) {
+    if (digitalRead(sensor4Pin) == LOW) {
+      // Startposition erreicht
+      homingActive = false;
+      disableCoils();
       digitalWrite(ledPin, LOW);
     } else {
       stepper.runSpeed();
-      return;
+      return;                           // während Homing nichts anderes tun
     }
   }
 
-  // --- Endschalter-Schutz FINISH---
-  if (digitalRead(sensor5Pin) == LOW && digitalRead(sensor4Pin) != LOW){
-    while(digitalRead(sensor4Pin) != LOW){
-      stepper.setSpeed(600);                //vorher 500 !!!!
-      stepper.run();
-     //Queue leeren vielleicht so?:
-      queueHead = queueTail;
-      taskActive = false;
-    }
-    while(digitalRead(sensor5Pin) != LOW){
-      //warten auf Startsignal
-    }
-  }
-
-  // --- Neue Aufgaben nur erlauben, wenn Endschalter nicht aktiv ---
-  if (!endPositionAktiv && pause + 4000 <= now) {
+  // -------------------------------------------------------------------
+  // 3) Neue Aufgaben nur, wenn Endposition NICHT aktiv und kein Homing
+  // -------------------------------------------------------------------
+  if (!endPositionAktiv && !homingActive && pause + 4000 <= now) {
     if (digitalRead(sensor1Pin) == LOW && (now - lastTrigger1 > debounceTime)) {
-      enqueue(-stepsPerRevolution);
+      enqueue(-stepsPerRevolution);          // 1 Umdrehung Richtung Finish
       lastTrigger1 = now; pause = now;
     }
     if (digitalRead(sensor2Pin) == LOW && (now - lastTrigger2 > debounceTime)) {
-      enqueue(-2 * stepsPerRevolution);
+      enqueue(-2L * stepsPerRevolution);     // 2 Umdrehungen
       lastTrigger2 = now; pause = now;
     }
     if (digitalRead(sensor3Pin) == LOW && (now - lastTrigger3 > debounceTime)) {
-      enqueue(-3 * stepsPerRevolution);
+      enqueue(-3L * stepsPerRevolution);     // 3 Umdrehungen
       lastTrigger3 = now; pause = now;
     }
   }
 
-  if (endPositionAktiv == 1) {
-    queueHead = queueTail;   // alle Aufgaben löschen
+  // Falls Endposition aktiv bleibt: Queue leeren, Motor aus
+  if (endPositionAktiv && !homingActive) {
+    queueHead = queueTail;
     taskActive = false;
-    disableCoils();          // Motor komplett stromlos
+    disableCoils();
     digitalWrite(ledPin, LOW);
   }
 
-  // --- Motorsteuerung über Queue ---
+  // -------------------------------------------------------------------
+  // 4) Motorsteuerung über Queue (Positionsmodus mit fester Endgeschwindigkeit)
+  // -------------------------------------------------------------------
   if (!taskActive && dequeue(currentTask)) {
-    enableCoils(); // Spulen aktivieren, bevor Motor läuft
-    stepper.move(currentTask.steps);
+    enableCoils();
+    stepper.move(currentTask.steps);   // neg. Steps = Richtung Finish
     taskActive = true;
     digitalWrite(ledPin, HIGH);
   }
 
   if (taskActive) {
-    if (stepper.distanceToGo() != 0) {  
-      stepper.setSpeed(-600);               // vorher 500 !!
-      stepper.run();
-     
-
+    if (stepper.distanceToGo() != 0) {
+      stepper.run();                   // fährt bis MOTOR_SPEED hoch, dann konstant
     } else {
       taskActive = false;
-      disableCoils(); // Bewegung fertig → Spulen aus
+      disableCoils();
       digitalWrite(ledPin, LOW);
     }
   } else {
-    disableCoils(); // falls kein Task aktiv ist
+    // Kein Task, kein Homing, keine manuelle Fahrt -> sicherheitshalber Spulen aus
+    disableCoils();
   }
 }
