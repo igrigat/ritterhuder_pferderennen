@@ -34,7 +34,7 @@ int queueHead = 0;
 int queueTail = 0;
 bool taskActive = false;
 bool endPositionAktiv = false;
-bool homingActive = false;     // automatisches Zurückfahren von Finish zu Start
+bool homingActive = false;        // automatisches Zurückfahren von Finish zu Start
 Task currentTask;
 
 // ---------------------- Entprellung ----------------------
@@ -45,7 +45,8 @@ const unsigned long debounceTime = 200;
 unsigned long pause = 0;
 
 // ---------------------- Lauf-Status ----------------------
-bool manualRunActive = false;
+bool manualRunActive   = false;   // Start-Taster-Fahrt zu sensor4
+bool commandsEnabled   = false;   // nimmt Bahn gerade Befehle (sensor1–3) an?
 
 // ---------------------- Queue-Funktionen ----------------------
 void enqueue(long steps) {
@@ -89,10 +90,11 @@ void setup() {
   pinMode(taster6Pin, INPUT_PULLUP);
   pinMode(ledPin, OUTPUT);
 
-  stepper.setMaxSpeed(MOTOR_SPEED);   // überall gleiche Endgeschwindigkeit
+  stepper.setMaxSpeed(MOTOR_SPEED);
   stepper.setAcceleration(MOTOR_ACCEL);
 
-  disableCoils(); // Spulen beim Start aus
+  disableCoils();       // Spulen beim Start aus
+  commandsEnabled = false;  // erst nach Start-Taster freigeben
 }
 
 // ---------------------- Loop ----------------------
@@ -104,36 +106,41 @@ void loop() {
 
   // -------------------------------------------------------------------
   // 1) Manuelle Steuerung: Taster -> Motor läuft bis Start-Sensor (4)
+  //    UND schaltet danach die Befehle (sensor1–3) frei
   // -------------------------------------------------------------------
   if (digitalRead(taster6Pin) == LOW && !manualRunActive && !homingActive && !taskActive) {
-    manualRunActive = true;
+    manualRunActive   = true;
+    commandsEnabled   = false;     // während der Fahrt keine Befehle annehmen
     enableCoils();
     digitalWrite(ledPin, HIGH);
-    stepper.setSpeed(+MOTOR_SPEED);     // Richtung: Start (sensor4)
+    stepper.setSpeed(+MOTOR_SPEED);  // Richtung: Start (sensor4)
   }
 
   if (manualRunActive) {
     if (digitalRead(sensor4Pin) == LOW) {
-      // Startposition erreicht
+      // Startposition erreicht -> Bahn ist startklar
       manualRunActive = false;
       disableCoils();
       digitalWrite(ledPin, LOW);
+      commandsEnabled = true;      // AB JETZT dürfen sensor1–3 wieder Aufgaben erzeugen
     } else {
-      stepper.runSpeed();               // konstante Geschwindigkeit
-      return;                           // andere Logik aussetzen, solange manuell
+      stepper.runSpeed();
+      return;                       // andere Logik aussetzen, solange manuell fährt
     }
   }
 
   // -------------------------------------------------------------------
-  // 2) Automatisches Zurückfahren, wenn Finish (5) aktiv, aber nicht an Start (4)
+  // 2) Automatisches Homing: Finish (5) aktiv, aber nicht an Start (4)
+  //    -> zurückfahren zu sensor4, dabei KEINE Befehle annehmen
   // -------------------------------------------------------------------
   if (!manualRunActive && !taskActive && !homingActive &&
       (digitalRead(sensor5Pin) == LOW) && (digitalRead(sensor4Pin) == HIGH)) {
 
-    homingActive = true;
+    homingActive   = true;
+    commandsEnabled = false;       // beim Homing nichts annehmen, auch danach erst wieder nach Start-Taster!
     enableCoils();
     digitalWrite(ledPin, HIGH);
-    stepper.setSpeed(+MOTOR_SPEED);     // gleiche Geschwindigkeit Richtung Start
+    stepper.setSpeed(+MOTOR_SPEED); // Richtung: Start (sensor4)
 
     // Queue leeren, damit nichts mehr nachläuft
     queueHead = queueTail;
@@ -141,20 +148,25 @@ void loop() {
 
   if (homingActive) {
     if (digitalRead(sensor4Pin) == LOW) {
-      // Startposition erreicht
+      // Startposition erreicht -> Homing fertig
       homingActive = false;
       disableCoils();
       digitalWrite(ledPin, LOW);
+      // WICHTIG: commandsEnabled bleibt FALSE
+      // → erst wenn der Start-Taster erneut gedrückt wurde, wird wieder auf true gesetzt
     } else {
       stepper.runSpeed();
-      return;                           // während Homing nichts anderes tun
+      return;                       // während Homing nichts anderes tun
     }
   }
 
   // -------------------------------------------------------------------
-  // 3) Neue Aufgaben nur, wenn Endposition NICHT aktiv und kein Homing
+  // 3) Neue Aufgaben nur, wenn:
+  //    - Endposition nicht aktiv
+  //    - kein Homing
+  //    - Befehle freigegeben (commandsEnabled == true)
   // -------------------------------------------------------------------
-  if (!endPositionAktiv && !homingActive && pause + 4000 <= now) {
+  if (commandsEnabled && !endPositionAktiv && !homingActive && pause + 4000 <= now) {
     if (digitalRead(sensor1Pin) == LOW && (now - lastTrigger1 > debounceTime)) {
       enqueue(-stepsPerRevolution);          // 1 Umdrehung Richtung Finish
       lastTrigger1 = now; pause = now;
@@ -169,16 +181,17 @@ void loop() {
     }
   }
 
-  // Falls Endposition aktiv bleibt: Queue leeren, Motor aus
+  // Falls Endposition aktiv bleibt: Queue leeren, Motor aus und Befehle sperren
   if (endPositionAktiv && !homingActive) {
     queueHead = queueTail;
     taskActive = false;
     disableCoils();
     digitalWrite(ledPin, LOW);
+    commandsEnabled = false;    // Bahn ist im Ziel, bis zum nächsten Start-Taster gesperrt
   }
 
   // -------------------------------------------------------------------
-  // 4) Motorsteuerung über Queue (Positionsmodus mit fester Endgeschwindigkeit)
+  // 4) Motorsteuerung über Queue (Positionsmodus)
   // -------------------------------------------------------------------
   if (!taskActive && dequeue(currentTask)) {
     enableCoils();
@@ -189,14 +202,16 @@ void loop() {
 
   if (taskActive) {
     if (stepper.distanceToGo() != 0) {
-      stepper.run();                   // fährt bis MOTOR_SPEED hoch, dann konstant
+      stepper.run();
     } else {
       taskActive = false;
       disableCoils();
       digitalWrite(ledPin, LOW);
+      // commandsEnabled bleibt unverändert – Rennen darf weiterlaufen,
+      // bis Finish erreicht oder Homing ausgelöst wird.
     }
   } else {
-    // Kein Task, kein Homing, keine manuelle Fahrt -> sicherheitshalber Spulen aus
+    // Kein Task, kein Homing, keine manuelle Fahrt -> Spulen aus
     disableCoils();
   }
 }
