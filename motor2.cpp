@@ -7,6 +7,7 @@ const int sensor3Pin = 4;  // Loch 3
 const int sensor4Pin = 5; // Sensor Anfangsposition
 const int sensor5Pin = 6; // Sensor Endposition
 const int taster6Pin = 7; // Start-Taster
+const int tasterStart = 12; // echter Startknopf
 
 // Schrittmotor (28BYJ-48 an ULN2003)
 const int motorPin1 = 8;
@@ -81,6 +82,7 @@ void setup() {
   pinMode(sensor4Pin, INPUT_PULLUP);
   pinMode(sensor5Pin, INPUT_PULLUP);
   pinMode(taster6Pin, INPUT_PULLUP);
+  pinMode(tasterStart, INPUT_PULLUP);
   pinMode(ledPin, OUTPUT);
 
   stepper.setMaxSpeed(800);
@@ -122,9 +124,10 @@ void loop() {
       queueHead = queueTail;
       taskActive = false;
     }
-    while(digitalRead(sensor5Pin) != LOW){
+    while(digitalRead(tasterStart) != LOW){
       //warten auf Startsignal
     }
+    delay(200);
   }
 
   // --- Neue Aufgaben nur erlauben, wenn Endschalter nicht aktiv ---
