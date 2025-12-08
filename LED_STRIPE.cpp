@@ -217,10 +217,10 @@ for (int k = 0; k<=14; k++){
 pixels.setPixelColor(k, pixels.Color(0, 0, 100));
 }
 pixels.show();
-digitalWrite(bahnROTout, LOW);
-digitalWrite(bahnGELBout, LOW);
-digitalWrite(bahnBLAUout, LOW);
-digitalWrite(bahnGRUENout, LOW);
+//digitalWrite(bahnROTout, LOW);
+//digitalWrite(bahnGELBout, LOW);
+//digitalWrite(bahnBLAUout, LOW);
+//digitalWrite(bahnGRUENout, LOW);
 delay(200);
 }
 
