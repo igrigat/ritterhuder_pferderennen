@@ -68,13 +68,13 @@ digitalWrite(bahnGELBout, LOW);
 digitalWrite(bahnBLAUout, LOW);
 digitalWrite(bahnGRUENout, LOW);
   for (int i = 0; i <= 30; i++) {
-    for (int k = 0; k<=14; k+2) {
+    for (int k = 0; k<=14; k+=2) {
     pixels.setPixelColor(k, pixels.Color(0, 0, 0));
   pixels.setPixelColor(k+1, pixels.Color(0, 100, 0));
     }
     pixels.show();
     delay(200);
-      for (int k = 0; k<=14; k+2) {
+      for (int k = 0; k<=14; k+=2) {
     pixels.setPixelColor(k, pixels.Color(0, 100, 0));
   pixels.setPixelColor(k+1, pixels.Color(0, 0, 0));
     }
@@ -90,13 +90,13 @@ digitalWrite(bahnGELBout, LOW);
 digitalWrite(bahnBLAUout, LOW);
 digitalWrite(bahnGRUENout, LOW);
   for (int i = 0; i <= 30; i++) {
-    for (int k = 0; k<=14; k+2){
+    for (int k = 0; k<=14; k+=2){
     pixels.setPixelColor(k, pixels.Color(0, 0, 0));
   pixels.setPixelColor(k+1, pixels.Color(0, 100, 85));
     }
     pixels.show();
     delay(200);
-  for (int k = 0; k<=14; k+2){
+  for (int k = 0; k<=14; k+=2){
     pixels.setPixelColor(k, pixels.Color(0, 100, 85));
   pixels.setPixelColor(k+1, pixels.Color(0, 0, 0));
     }
@@ -111,13 +111,13 @@ digitalWrite(bahnGELBout, LOW);
 digitalWrite(bahnBLAUout, LOW);
 digitalWrite(bahnGRUENout, LOW);
   for (int i = 0; i <= 30; i++) {
-    for (int k = 0; k<=14; k+2){
+    for (int k = 0; k<=14; k+=2){
     pixels.setPixelColor(k, pixels.Color(0, 0, 0));
   pixels.setPixelColor(k+1, pixels.Color(100, 0, 0));
     }
     pixels.show();
     delay(200);
-     for (int k = 0; k<=14; k+2){
+     for (int k = 0; k<=14; k+=2){
     pixels.setPixelColor(k, pixels.Color(100, 0, 0));
   pixels.setPixelColor(k+1, pixels.Color(0, 0, 0));
     }
@@ -132,13 +132,13 @@ digitalWrite(bahnGELBout, LOW);
 digitalWrite(bahnBLAUout, LOW);
 digitalWrite(bahnGRUENout, LOW);
   for (int i = 0; i <= 30; i++) {
-     for (int k = 0; k<=14; k+2){
+     for (int k = 0; k<=14; k+=2){
     pixels.setPixelColor(k, pixels.Color(0, 0, 0));
   pixels.setPixelColor(k+1, pixels.Color(0, 0, 100));
     }
     pixels.show();
     delay(200);
- for (int k = 0; k<=14; k+2){
+ for (int k = 0; k<=14; k+=2){
     pixels.setPixelColor(k, pixels.Color(0, 0, 100));
   pixels.setPixelColor(k+1, pixels.Color(0, 0, 0));
     }
