@@ -151,40 +151,51 @@ digitalWrite(bahnGRUENout, LOW);
 var = var+1;
 if (var == 6000){
 var=0;
-if(var3==0){
-for (int k = 1; k<=14; k+=4){
-pixels.setPixelColor(k, pixels.Color(0, 0, 90-var2));  //gruen
-pixels.setPixelColor(k+1, pixels.Color(0, 90-var2, 0));  //rot
-pixels.setPixelColor(k+2, pixels.Color(0, 90-var2, 80-var2));  //gelb
-pixels.setPixelColor(k+3, pixels.Color(90-var2, 0, 0));  //blau
-var3=1;
-}}
-if(var3==1){
-for (int k = 1; k<=14; k+=4){
-pixels.setPixelColor(k+1, pixels.Color(0, 0, 90-var2));  //gruen
-pixels.setPixelColor(k+2, pixels.Color(0, 90-var2, 0));  //rot
-pixels.setPixelColor(k+3, pixels.Color(0, 90-var2, 85-var2));  //gelb
-pixels.setPixelColor(k, pixels.Color(90-var2, 0, 0));  //blau
-var3=2;
-}}
-if(var3==2){
-for (int k = 1; k<=14; k+=4){
-pixels.setPixelColor(k+2, pixels.Color(0, 0, 90-var2));  //gruen
-pixels.setPixelColor(k+3, pixels.Color(0, 90-var2, 0));  //rot
-pixels.setPixelColor(k, pixels.Color(0, 90-var2, 85-var2));  //gelb
-pixels.setPixelColor(k+1, pixels.Color(90-var2, 0, 0));  //blau
-var3=3;
-}}
-else{
-  var3=0;
-for (int k = 1; k<=14; k+=4){
-pixels.setPixelColor(k+3, pixels.Color(0, 0, 90-var2));  //gruen
-pixels.setPixelColor(k, pixels.Color(0, 90-var2, 0));  //rot
-pixels.setPixelColor(k+1, pixels.Color(0, 90-var2, 85-var2));  //gelb
-pixels.setPixelColor(k+2, pixels.Color(90-var2, 0, 0));  //blau
-}}
-pixels.show();
+switch (var3) {
+  case 0:
+    for (int k = 0; k < 15; k += 4) {
+      pixels.setPixelColor(k,   pixels.Color(0, 0, 90-var2));        // grün
+      pixels.setPixelColor(k+1, pixels.Color(0, 90-var2, 0));        // rot
+      pixels.setPixelColor(k+2, pixels.Color(0, 90-var2, 80-var2));  // gelb
+      pixels.setPixelColor(k+3, pixels.Color(90-var2, 0, 0));        // blau
+    }
+    var3 = 1;
+    break;
+
+  case 1:
+    for (int k = 0; k < 15; k += 4) {
+      pixels.setPixelColor(k+1, pixels.Color(0, 0, 90-var2));        // grün
+      pixels.setPixelColor(k+2, pixels.Color(0, 90-var2, 0));        // rot
+      pixels.setPixelColor(k+3, pixels.Color(0, 90-var2, 85-var2));  // gelb
+      pixels.setPixelColor(k,   pixels.Color(90-var2, 0, 0));        // blau
+    }
+    var3 = 2;
+    break;
+
+  case 2:
+    for (int k = 0; k < 15; k += 4) {
+      pixels.setPixelColor(k+2, pixels.Color(0, 0, 90-var2));        // grün
+      pixels.setPixelColor(k+3, pixels.Color(0, 90-var2, 0));        // rot
+      pixels.setPixelColor(k,   pixels.Color(0, 90-var2, 85-var2));  // gelb
+      pixels.setPixelColor(k+1, pixels.Color(90-var2, 0, 0));        // blau
+    }
+    var3 = 3;
+    break;
+
+  case 3:
+    for (int k = 0; k < 15; k += 4) {
+      pixels.setPixelColor(k+3, pixels.Color(0, 0, 90-var2));        // grün
+      pixels.setPixelColor(k,   pixels.Color(0, 90-var2, 0));        // rot
+      pixels.setPixelColor(k+1, pixels.Color(0, 90-var2, 85-var2));  // gelb
+      pixels.setPixelColor(k+2, pixels.Color(90-var2, 0, 0));        // blau
+    }
+    var3 = 0;  // zurücksetzen
+    break;
 }
+pixels.show();
+
+}
+
 
 
 //Starten
