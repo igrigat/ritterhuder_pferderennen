@@ -70,12 +70,12 @@ digitalWrite(bahnGRUENout, LOW);
   for (int i = 0; i <= 30; i++) {
     for (int k = 0; k<=14; k+=2) {
     pixels.setPixelColor(k, pixels.Color(0, 0, 0));
-  pixels.setPixelColor(k+1, pixels.Color(0, 100, 0));
+  pixels.setPixelColor(k+1, pixels.Color(0, 90, 0));
     }
     pixels.show();
     delay(200);
       for (int k = 0; k<=14; k+=2) {
-    pixels.setPixelColor(k, pixels.Color(0, 100, 0));
+    pixels.setPixelColor(k, pixels.Color(0, 90, 0));
   pixels.setPixelColor(k+1, pixels.Color(0, 0, 0));
     }
     pixels.show();
@@ -92,12 +92,12 @@ digitalWrite(bahnGRUENout, LOW);
   for (int i = 0; i <= 30; i++) {
     for (int k = 0; k<=14; k+=2){
     pixels.setPixelColor(k, pixels.Color(0, 0, 0));
-  pixels.setPixelColor(k+1, pixels.Color(0, 100, 85));
+  pixels.setPixelColor(k+1, pixels.Color(0, 90, 75));
     }
     pixels.show();
     delay(200);
   for (int k = 0; k<=14; k+=2){
-    pixels.setPixelColor(k, pixels.Color(0, 100, 85));
+    pixels.setPixelColor(k, pixels.Color(0, 90, 75));
   pixels.setPixelColor(k+1, pixels.Color(0, 0, 0));
     }
     pixels.show();
@@ -113,12 +113,12 @@ digitalWrite(bahnGRUENout, LOW);
   for (int i = 0; i <= 30; i++) {
     for (int k = 0; k<=14; k+=2){
     pixels.setPixelColor(k, pixels.Color(0, 0, 0));
-  pixels.setPixelColor(k+1, pixels.Color(100, 0, 0));
+  pixels.setPixelColor(k+1, pixels.Color(90, 0, 0));
     }
     pixels.show();
     delay(200);
      for (int k = 0; k<=14; k+=2){
-    pixels.setPixelColor(k, pixels.Color(100, 0, 0));
+    pixels.setPixelColor(k, pixels.Color(90, 0, 0));
   pixels.setPixelColor(k+1, pixels.Color(0, 0, 0));
     }
     pixels.show();
@@ -126,7 +126,7 @@ digitalWrite(bahnGRUENout, LOW);
     } 
     }
 if (digitalRead(bahnGRUENin) == LOW){
-  var2 = 75;
+  var2 = 70;
 digitalWrite(bahnROTout, LOW);
 digitalWrite(bahnGELBout, LOW);
 digitalWrite(bahnBLAUout, LOW);
@@ -134,12 +134,12 @@ digitalWrite(bahnGRUENout, LOW);
   for (int i = 0; i <= 30; i++) {
      for (int k = 0; k<=14; k+=2){
     pixels.setPixelColor(k, pixels.Color(0, 0, 0));
-  pixels.setPixelColor(k+1, pixels.Color(0, 0, 100));
+  pixels.setPixelColor(k+1, pixels.Color(0, 0, 90));
     }
     pixels.show();
     delay(200);
  for (int k = 0; k<=14; k+=2){
-    pixels.setPixelColor(k, pixels.Color(0, 0, 100));
+    pixels.setPixelColor(k, pixels.Color(0, 0, 90));
   pixels.setPixelColor(k+1, pixels.Color(0, 0, 0));
     }
     pixels.show();
@@ -149,39 +149,39 @@ digitalWrite(bahnGRUENout, LOW);
  
  //rennen
 var = var+1;
-if (var == 2400){
+if (var == 6000){
 var=0;
 if(var3==0){
-for (int k = 0; k<=14; k+=4){
-pixels.setPixelColor(k, pixels.Color(0, 0, 100-var2));  //gruen
-pixels.setPixelColor(k+1, pixels.Color(0, 100-var2, 0));  //rot
-pixels.setPixelColor(k+2, pixels.Color(0, 100-var2, 85-var2));  //gelb
-pixels.setPixelColor(k+3, pixels.Color(100-var2, 0, 0));  //blau
+for (int k = 1; k<=14; k+=4){
+pixels.setPixelColor(k, pixels.Color(0, 0, 90-var2));  //gruen
+pixels.setPixelColor(k+1, pixels.Color(0, 90-var2, 0));  //rot
+pixels.setPixelColor(k+2, pixels.Color(0, 90-var2, 80-var2));  //gelb
+pixels.setPixelColor(k+3, pixels.Color(90-var2, 0, 0));  //blau
 var3=1;
 }}
 if(var3==1){
-for (int k = 0; k<=14; k+=4){
-pixels.setPixelColor(k+1, pixels.Color(0, 0, 100-var2));  //gruen
-pixels.setPixelColor(k+2, pixels.Color(0, 100-var2, 0));  //rot
-pixels.setPixelColor(k+3, pixels.Color(0, 100-var2, 85-var2));  //gelb
-pixels.setPixelColor(k, pixels.Color(100-var2, 0, 0));  //blau
+for (int k = 1; k<=14; k+=4){
+pixels.setPixelColor(k+1, pixels.Color(0, 0, 90-var2));  //gruen
+pixels.setPixelColor(k+2, pixels.Color(0, 90-var2, 0));  //rot
+pixels.setPixelColor(k+3, pixels.Color(0, 90-var2, 85-var2));  //gelb
+pixels.setPixelColor(k, pixels.Color(90-var2, 0, 0));  //blau
 var3=2;
 }}
 if(var3==2){
-for (int k = 0; k<=14; k+=4){
-pixels.setPixelColor(k+2, pixels.Color(0, 0, 100-var2));  //gruen
-pixels.setPixelColor(k+3, pixels.Color(0, 100-var2, 0));  //rot
-pixels.setPixelColor(k, pixels.Color(0, 100-var2, 85-var2));  //gelb
-pixels.setPixelColor(k+1, pixels.Color(100-var2, 0, 0));  //blau
+for (int k = 1; k<=14; k+=4){
+pixels.setPixelColor(k+2, pixels.Color(0, 0, 90-var2));  //gruen
+pixels.setPixelColor(k+3, pixels.Color(0, 90-var2, 0));  //rot
+pixels.setPixelColor(k, pixels.Color(0, 90-var2, 85-var2));  //gelb
+pixels.setPixelColor(k+1, pixels.Color(90-var2, 0, 0));  //blau
 var3=3;
 }}
 else{
   var3=0;
-for (int k = 0; k<=14; k+=4){
-pixels.setPixelColor(k+3, pixels.Color(0, 0, 100-var2));  //gruen
-pixels.setPixelColor(k, pixels.Color(0, 100-var2, 0));  //rot
-pixels.setPixelColor(k+1, pixels.Color(0, 100-var2, 85-var2));  //gelb
-pixels.setPixelColor(k+2, pixels.Color(100-var2, 0, 0));  //blau
+for (int k = 1; k<=14; k+=4){
+pixels.setPixelColor(k+3, pixels.Color(0, 0, 90-var2));  //gruen
+pixels.setPixelColor(k, pixels.Color(0, 90-var2, 0));  //rot
+pixels.setPixelColor(k+1, pixels.Color(0, 90-var2, 85-var2));  //gelb
+pixels.setPixelColor(k+2, pixels.Color(90-var2, 0, 0));  //blau
 }}
 pixels.show();
 }
@@ -206,11 +206,11 @@ for (int k = 0; k<=14; k++){
 pixels.setPixelColor(k, pixels.Color(0, 0, 100));
 }
 pixels.show();
-delay(200);
 digitalWrite(bahnROTout, LOW);
 digitalWrite(bahnGELBout, LOW);
 digitalWrite(bahnBLAUout, LOW);
 digitalWrite(bahnGRUENout, LOW);
+delay(200);
 }
 
 }
