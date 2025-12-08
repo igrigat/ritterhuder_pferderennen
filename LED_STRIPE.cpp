@@ -143,10 +143,10 @@ digitalWrite(bahnGRUENout, LOW);
  
  //rennen
 var = var+1;
-if (var == 60){
+if (var == 2400){
 var=0;
 for (int k = 0; k<=14; k++){
- pixels.setPixelColor(k, pixels.Color(random(0,150), random(0,150), random(0,150))); 
+ pixels.setPixelColor(k, pixels.Color(random(0,100), random(0,100), random(0,100))); 
 }
 pixels.show();
 }
@@ -156,15 +156,15 @@ pixels.show();
 if(digitalRead(start) == LOW){
  for (int i=0; i<=2; i++){
 for (int k = 0; k<=14; k++){
- pixels.setPixelColor(k, pixels.Color(0, 100, 100)); 
+ pixels.setPixelColor(k, pixels.Color(0, 100, 0)); 
 }
 pixels.show();
-delay(200);
+delay(400);
 for (int k = 0; k<=14; k++){
  pixels.setPixelColor(k, pixels.Color(0, 0, 0)); 
 }
 pixels.show();
-delay(200);
+delay(400);
 }
 for (int k = 0; k<=14; k++){
 pixels.setPixelColor(k, pixels.Color(0, 0, 100));
