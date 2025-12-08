@@ -64,7 +64,7 @@ digitalWrite(bahnROTout, LOW);
 digitalWrite(bahnGELBout, LOW);
 digitalWrite(bahnBLAUout, LOW);
 digitalWrite(bahnGRUENout, LOW);
-  for (int i = 0; i <= 20; i++) {
+  for (int i = 0; i <= 30; i++) {
     for (int k = 0; k<=14; k+2) {
     pixels.setPixelColor(k, pixels.Color(0, 0, 0));
   pixels.setPixelColor(k+1, pixels.Color(0, 100, 0));
@@ -85,7 +85,7 @@ digitalWrite(bahnROTout, LOW);
 digitalWrite(bahnGELBout, LOW);
 digitalWrite(bahnBLAUout, LOW);
 digitalWrite(bahnGRUENout, LOW);
-  for (int i = 0; i <= 20; i++) {
+  for (int i = 0; i <= 30; i++) {
     for (int k = 0; k<=14; k+2){
     pixels.setPixelColor(k, pixels.Color(0, 0, 0));
   pixels.setPixelColor(k+1, pixels.Color(90, 100, 0));
@@ -105,7 +105,7 @@ digitalWrite(bahnROTout, LOW);
 digitalWrite(bahnGELBout, LOW);
 digitalWrite(bahnBLAUout, LOW);
 digitalWrite(bahnGRUENout, LOW);
-  for (int i = 0; i <= 20; i++) {
+  for (int i = 0; i <= 30; i++) {
     for (int k = 0; k<=14; k+2){
     pixels.setPixelColor(k, pixels.Color(0, 0, 0));
   pixels.setPixelColor(k+1, pixels.Color(100, 0, 0));
@@ -125,7 +125,7 @@ digitalWrite(bahnROTout, LOW);
 digitalWrite(bahnGELBout, LOW);
 digitalWrite(bahnBLAUout, LOW);
 digitalWrite(bahnGRUENout, LOW);
-  for (int i = 0; i <= 20; i++) {
+  for (int i = 0; i <= 30; i++) {
      for (int k = 0; k<=14; k+2){
     pixels.setPixelColor(k, pixels.Color(0, 0, 0));
   pixels.setPixelColor(k+1, pixels.Color(0, 0, 100));
