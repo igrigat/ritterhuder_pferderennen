@@ -114,7 +114,7 @@ void loop() {
   }
 
   // --- Endschalter-Schutz FINISH---
-  if (digitalRead(sensor5Pin) == LOW){
+  if (digitalRead(sensor5Pin) == LOW && digitalRead(sensor4Pin) != LOW){
     while(digitalRead(sensor4Pin) != LOW){
       stepper.setSpeed(600);                //vorher 500 !!!!
       stepper.run();
